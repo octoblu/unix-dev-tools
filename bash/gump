@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="v1.0.0"
+SCRIPT_VERSION="v1.0.1"
 
 bump_version(){
   local version="$1"
@@ -23,7 +23,7 @@ check_git(){
     echo "WARNING: this project is behind remote!"
     echo "$GIT_LOG"
     echo ""
-    read -s -p "press 'y' to pull, any other key to continue"$'\n' -n 1 GIT_PULL
+    read -s -p "press 'y' to pull, any other key to exit"$'\n' -n 1 GIT_PULL
     if [[ "$GIT_PULL" == "y" ]]; then
       echo "pulling..."
       git pull
@@ -38,7 +38,7 @@ do_git_stuff(){
   local message="$2"
   local full_version="v${new_version}"
   local full_message="${full_version}"
-  if [ "$message" != "" ]; then
+  if [ ! -z "$message" ]; then
     full_message="${full_message} ${message}"
   fi
 
@@ -51,13 +51,14 @@ do_git_stuff(){
   echo ""
   echo "AND we will be changing your package.json or version.go"
   echo ""
-  read -s -p "press 'y' to run the above commands, any other key to continue"$'\n' -n 1 DO_GIT
+  read -s -p "press 'y' to run the above commands, any other key to exit"$'\n' -n 1 DO_GIT
   if [[ "$DO_GIT" == "y" ]]; then
     modify_file "$new_version"
     echo "Releasing ${full_version}..."
     git add .
     git commit -m "$full_message"
     git tag "$full_version"
+    git push
     git push --tags
   fi
 }
@@ -129,6 +130,7 @@ version(){
 main(){
   local cmd="$1"
   local cmd2="$2"
+
   if [ "$cmd" == "--help" -o "$cmd" == "-h" ]; then
     usage
     exit 0
@@ -141,14 +143,14 @@ main(){
 
   local bump="$(get_bump "$cmd")"
   local message=""
-  if [ "$bump" == "" ]; then
+  if [ -z "$bump" ]; then
     bump="$(get_bump "$cmd2")"
     message="$cmd"
   else
     message="$cmd2"
   fi
 
-  if [ "$bump" == "" ]; then
+  if [ -z "$bump" ]; then
     bump="patch"
   fi
 
@@ -164,4 +166,4 @@ main(){
   do_git_stuff "$new_version" "$message"
 }
 
-main $@
+main "$@"
