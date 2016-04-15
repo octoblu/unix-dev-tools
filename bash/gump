@@ -64,7 +64,7 @@ do_git_stuff(){
 }
 
 get_project_version(){
-  local latest_tag="$(git tag --list | gsort -V | tail -n 1)"
+  local latest_tag="$(git tag --list | grep '^v[0-9]*\.[0-9]*\.[0-9]*' | gsort -V | tail -n 1)"
   local version="${latest_tag/v/}"
   echo "$version"
 }
