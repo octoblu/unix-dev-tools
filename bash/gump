@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="v1.0.4"
+SCRIPT_VERSION="v1.1.0"
 
 bump_version(){
   local version="$1"
@@ -64,9 +64,13 @@ do_git_stuff(){
 }
 
 get_project_version(){
-  local latest_tag="$(git tag --list | grep '^v[0-9]*\.[0-9]*\.[0-9]*' | gsort -V | tail -n 1)"
-  local version="${latest_tag/v/}"
-  echo "$version"
+  if [ -f "./package.json" ]; then
+    cat ./package.json | jq '.version' --raw-output
+  else
+    local latest_tag="$(git tag --list | grep '^v[0-9]\+\.[0-9]\+\.[0-9]\+' | gsort -V | tail -n 1)"
+    local version="${latest_tag/v/}"
+    echo "$version"
+  fi
 }
 
 get_bump(){
@@ -97,7 +101,7 @@ modify_file(){
   if [ -f "./version.go" ]; then
     echo "Modifying version.go"
     local versionGo="$(cat ./version.go)"
-    echo "$versionGo" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./version.go
+    echo "$versionGo" | sed -e "s/[0-9]\+\.[0-9]\+\.[0-9]\+/$version/" > ./version.go
   fi
 }
 
