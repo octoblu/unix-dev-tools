@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="v1.1.0"
+SCRIPT_VERSION="v1.2.0"
 
 bump_version(){
   local version="$1"
@@ -12,6 +12,17 @@ bump_version(){
   local new_version="$(semver bump "$2")"
   rm .version
   echo "$new_version"
+}
+
+check_master(){
+  CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
+  if [ "$CURRENT_BRANCH" != "master" ]; then
+    echo ""
+    echo "ERROR: this project is not in the master branch!"
+    echo `git status | head -1`
+    echo ""
+    exit 1
+  fi
 }
 
 check_git(){
@@ -158,12 +169,20 @@ main(){
     bump="patch"
   fi
 
+  check_master
+  local master_okay="$?"
+  if [ "$master_okay" != "0" ]; then
+    echo "Not on master branch, exiting"
+    exit 1
+  fi
+
   check_git
   local git_okay="$?"
   if [ "$git_okay" != "0" ]; then
     echo "Git syncing error, exiting"
     exit 1
   fi
+
   local version="$(get_project_version)"
   local new_version="$(bump_version "$version" "$bump")"
   echo "Changing version $version -> $new_version"
