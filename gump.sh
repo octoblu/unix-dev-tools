@@ -1,7 +1,5 @@
 #!/bin/bash
 
-SCRIPT_VERSION="v1.2.0"
-
 bump_version(){
   local version="$1"
   local bump="$2"
@@ -60,7 +58,7 @@ do_git_stuff(){
   echo "  4. git push"
   echo "  5. git push --tags"
   echo ""
-  echo "AND we will be changing your package.json or version.go"
+  echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
   read -s -p "press 'y' to run the above commands, any other key to exit"$'\n' -n 1 DO_GIT
   if [[ "$DO_GIT" == "y" ]]; then
@@ -76,12 +74,23 @@ do_git_stuff(){
 
 get_project_version(){
   if [ -f "./package.json" ]; then
-    cat ./package.json | jq '.version' --raw-output
-  else
-    local latest_tag="$(git tag --list | grep '^v[0-9]\+\.[0-9]\+\.[0-9]\+' | gsort -V | tail -n 1)"
-    local version="${latest_tag/v/}"
-    echo "$version"
+    jq '.version' --raw-output ./package.json
+    return
   fi
+
+  if [ -f "./version.go" ]; then
+    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./version.go
+    return
+  fi
+
+  if [ -f "./VERSION" ]; then
+    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./VERSION
+    return
+  fi
+
+  local latest_tag="$(git tag --list | grep '^v[0-9]\+\.[0-9]\+\.[0-9]\+' | gsort -V | tail -n 1)"
+  local version="${latest_tag/v/}"
+  echo "$version"
 }
 
 get_bump(){
@@ -114,6 +123,12 @@ modify_file(){
     local versionGo="$(cat ./version.go)"
     echo "$versionGo" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./version.go
   fi
+
+  if [ -f "./VERSION" ]; then
+    echo "Modifying VERSION"
+    local versionBash="$(cat VERSION)"
+    echo "$versionBash" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./VERSION
+  fi
 }
 
 usage(){
@@ -138,8 +153,27 @@ usage(){
   echo "  7. Run: git push --tags"
 }
 
+script_directory(){
+  local source="${BASH_SOURCE[0]}"
+  local dir=""
+
+  while [ -h "$source" ]; do # resolve $source until the file is no longer a symlink
+    dir="$( cd -P "$( dirname "$source" )" && pwd )"
+    source="$(readlink "$source")"
+    [[ $source != /* ]] && source="$dir/$source" # if $source was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  done
+
+  dir="$( cd -P "$( dirname "$source" )" && pwd )"
+
+  echo "$dir"
+}
+
 version(){
-  echo "${SCRIPT_VERSION}"
+  local directory="$(script_directory)"
+  local version=$(cat "$directory/VERSION")
+
+  echo "$version"
+  exit 0
 }
 
 main(){
