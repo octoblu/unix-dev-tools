@@ -53,10 +53,10 @@ do_git_stuff(){
 
   echo "Warning! About to run the following commands:"
   echo "  1. git add ."
-  echo "  2. git commit -m \"$full_message\""
-  echo "  3. git tag $full_version"
-  echo "  4. git push"
+  echo "  2. git commit --message \"$full_message\""
+  echo "  3. git tag $full_version --message \"$full_message\""
   echo "  5. git push --tags"
+  echo "  4. git push"
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -65,10 +65,10 @@ do_git_stuff(){
     modify_file "$new_version"
     echo "Releasing ${full_version}..."
     git add .
-    git commit -m "$full_message"
-    git tag "$full_version"
-    git push
+    git commit --message "$full_message"
+    git tag "$full_version" --message "$full_message"
     git push --tags
+    git push
   fi
 }
 
