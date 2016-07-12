@@ -55,8 +55,8 @@ do_git_stuff(){
   echo "  1. git add ."
   echo "  2. git commit --message \"$full_message\""
   echo "  3. git tag $full_version --message \"$full_message\""
-  echo "  5. git push --tags"
   echo "  4. git push"
+  echo "  5. git push --tags"
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -67,8 +67,8 @@ do_git_stuff(){
     git add .
     git commit --message "$full_message"
     git tag "$full_version" --message "$full_message"
-    git push --tags
     git push
+    git push --tags
   fi
 }
 
