@@ -54,7 +54,7 @@ do_git_stuff(){
   echo "Warning! About to run the following commands:"
   echo "  1. git add ."
   echo "  2. git commit --message \"$full_message\""
-  echo "  3. git tag $full_version --message \"$full_message\""
+  echo "  3. git tag $full_version"
   echo "  4. git push"
   echo "  5. git push --tags"
   echo ""
@@ -66,7 +66,7 @@ do_git_stuff(){
     echo "Releasing ${full_version}..."
     git add .
     git commit --message "$full_message"
-    git tag "$full_version" #  --message "$full_message"
+    git tag "$full_version"
     git push
     git push --tags
   fi
