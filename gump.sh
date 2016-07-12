@@ -66,7 +66,7 @@ do_git_stuff(){
     echo "Releasing ${full_version}..."
     git add .
     git commit --message "$full_message"
-    git tag "$full_version" --message "$full_message"
+    git tag "$full_version" #  --message "$full_message"
     git push
     git push --tags
   fi
