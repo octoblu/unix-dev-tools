@@ -131,6 +131,17 @@ modify_file(){
   fi
 }
 
+prompt_for_user() {
+  local users=""
+  read -p 'Add author(s): ' users
+  local users_count="$(echo "$users" | wc -w | xargs)"
+  if [ "$users_count" == '1' ]; then
+    git solo $users
+  else
+    git pair $users
+  fi
+}
+
 usage(){
   echo "USAGE: gump [<message>] [(--major|--minor|--patch)]"
   echo ""
@@ -214,6 +225,13 @@ main(){
   local git_okay="$?"
   if [ "$git_okay" != "0" ]; then
     echo "Git syncing error, exiting"
+    exit 1
+  fi
+
+  prompt_for_user
+  local user_prompt_okay="$?"
+  if [ "$user_prompt_okay" != "0" ]; then
+    echo 'Adding authors, exiting'
     exit 1
   fi
 
