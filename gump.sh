@@ -12,6 +12,13 @@ bump_version(){
   echo "$new_version"
 }
 
+check_for_git_pairing() {
+  if [ "$(gem list git-pairing --installed)" == "true" ]; then
+    return 0
+  fi
+  return 0
+}
+
 check_master(){
   CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
   if [ "$CURRENT_BRANCH" != "master" ]; then
@@ -225,6 +232,14 @@ main(){
   local git_okay="$?"
   if [ "$git_okay" != "0" ]; then
     echo "Git syncing error, exiting"
+    exit 1
+  fi
+  check_for_git_pairing
+  local git_pairing_install="$?"
+  
+  if [ "$git_pairing_install" != "0" ]; then
+    echo 'Missing git-pairing dependency'
+    echo 'Run: gem install git-pairing'
     exit 1
   fi
 
