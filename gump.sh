@@ -13,35 +13,35 @@ bump_version(){
 }
 
 check_for_git_pairing() {
-  if [ "$(gem list git-pairing --installed)" == "true" ]; then
+  if [ "$(gem list git-pairing --installed)" == 'true' ]; then
     return 0
   fi
-  return 0
+  return 1
 }
 
 check_master(){
   CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
   if [ "$CURRENT_BRANCH" != "master" ]; then
-    echo ""
-    echo "ERROR: this project is not in the master branch!"
+    echo ''
+    echo 'ERROR: this project is not in the master branch!'
     echo `git status | head -1`
-    echo ""
+    echo ''
     exit 1
   fi
 }
 
 check_git(){
   git fetch origin
-  GIT_LOG_CMD="git log HEAD..origin/master --oneline"
-  GIT_LOG="$($GIT_LOG_CMD)"
-  if [[ -n "$GIT_LOG" ]]; then
-    echo ""
-    echo "WARNING: this project is behind remote!"
-    echo "$GIT_LOG"
-    echo ""
-    read -s -p "press 'y' to pull, any other key to exit"$'\n' -n 1 GIT_PULL
-    if [[ "$GIT_PULL" == "y" ]]; then
-      echo "pulling..."
+  local get_log="$(git log HEAD..origin/master --oneline)"
+  if [[ -n "$get_log" ]]; then
+    echo ''
+    echo 'WARNING: this project is behind remote!'
+    echo "$get_log"
+    echo ''
+    local git_pull=''
+    read -s -p "press 'y' to pull, any other key to exit"$'\n' -n 1 git_pull
+    if [[ "$git_pull" == 'y' ]]; then
+      echo 'pulling...'
       git pull
     else
       exit 1
@@ -102,37 +102,50 @@ get_project_version(){
 
 get_bump(){
   local cmd="$1"
-  local bump=""
-  if [ "$cmd" == "--major" ]; then
-    bump="major"
+  local bump=''
+  if [ "$cmd" == '--major' ]; then
+    bump='major'
   fi
 
-  if [ "$cmd" == "--minor" ]; then
-    bump="minor"
+  if [ "$cmd" == '--minor' ]; then
+    bump='minor'
   fi
 
-  if [ "$cmd" == "--patch" ]; then
-    bump="patch"
+  if [ "$cmd" == '-p' ]; then
+    bump='patch'
   fi
+
+  if [ "$cmd" == '--patch' ]; then
+    bump='patch'
+  fi
+
+  if [ "$cmd" == '-i' ]; then
+    bump='init'
+  fi
+
+  if [ "$cmd" == '--init' ]; then
+    bump='init'
+  fi
+
   echo "$bump"
 }
 
 modify_file(){
   local version="$1"
   if [ -f "./package.json" ]; then
-    echo "Modifying package.json"
+    echo 'Modifying package.json'
     local packageJSON="$(cat ./package.json)"
     echo "$packageJSON" | jq --raw-output ".version=\"$version\"" > ./package.json
   fi
 
   if [ -f "./version.go" ]; then
-    echo "Modifying version.go"
+    echo 'Modifying version.go'
     local versionGo="$(cat ./version.go)"
     echo "$versionGo" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./version.go
   fi
 
   if [ -f "./VERSION" ]; then
-    echo "Modifying VERSION"
+    echo 'Modifying VERSION'
     local versionBash="$(cat VERSION)"
     echo "$versionBash" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./VERSION
   fi
@@ -150,25 +163,25 @@ prompt_for_user() {
 }
 
 usage(){
-  echo "USAGE: gump [<message>] [(--major|--minor|--patch)]"
-  echo ""
-  echo "example: gump \"fixed everything\" --patch"
-  echo ""
-  echo "  --major         major version bump. 1.0.0 -> 2.0.0"
-  echo "  --minor         minor version bump. 1.0.0 -> 1.1.0"
-  echo "  --patch         patch version bump. 1.0.0 -> 1.0.1"
-  echo "  -h, --help      print this help text"
-  echo "  -h, --help      print this help text"
-  echo "  -v, --version   print the version"
-  echo ""
-  echo "But what does it do? It will:"
-  echo "  1. Check if your project is out of sync"
-  echo "  2. Modify the package.json, version.go, or do nothing"
-  echo "  3. Run: git add ."
-  echo "  4. Run: git commit -m \"<new-version> <message>\""
-  echo "  5. Run: git tag <new-version>"
-  echo "  6. Run: git push"
-  echo "  7. Run: git push --tags"
+  echo 'USAGE: gump [<message>] [(--major|--minor|--patch)]'
+  echo ''
+  echo 'example: gump "added some awesome feature" --minor'
+  echo ''
+  echo '  --major         major version bump. 1.0.0 -> 2.0.0'
+  echo '  --minor         minor version bump. 1.0.0 -> 1.1.0'
+  echo '  -p, --patch     patch version bump. 1.0.0 -> 1.0.1 (default)'
+  echo '  -i, --init      set the version to 1.0.0'
+  echo '  -h, --help      print this help text'
+  echo '  -v, --version   print the version'
+  echo ''
+  echo 'But what does it do? It will:'
+  echo '  1. Check if your project is out of sync'
+  echo '  2. Modify the package.json, version.go, VERSION, or do nothing'
+  echo '  3. Run: git add .'
+  echo '  4. Run: git commit -m "<new-version> <message>"'
+  echo '  5. Run: git tag <new-version>'
+  echo '  6. Run: git push'
+  echo '  7. Run: git push --tags'
 }
 
 script_directory(){
@@ -198,12 +211,12 @@ main(){
   local cmd="$1"
   local cmd2="$2"
 
-  if [ "$cmd" == "--help" -o "$cmd" == "-h" ]; then
+  if [ "$cmd" == '--help' -o "$cmd" == '-h' ]; then
     usage
     exit 0
   fi
 
-  if [ "$cmd" == "--version" -o "$cmd" == "-v" ]; then
+  if [ "$cmd" == '--version' -o "$cmd" == '-v' ]; then
     version
     exit 0
   fi
@@ -218,25 +231,26 @@ main(){
   fi
 
   if [ -z "$bump" ]; then
-    bump="patch"
+    bump='patch'
   fi
 
   check_master
   local master_okay="$?"
   if [ "$master_okay" != "0" ]; then
-    echo "Not on master branch, exiting"
+    echo 'Not on master branch, exiting'
     exit 1
   fi
 
   check_git
   local git_okay="$?"
   if [ "$git_okay" != "0" ]; then
-    echo "Git syncing error, exiting"
+    echo 'Git syncing error, exiting'
     exit 1
   fi
+
   check_for_git_pairing
   local git_pairing_install="$?"
-  
+
   if [ "$git_pairing_install" != "0" ]; then
     echo 'Missing git-pairing dependency'
     echo 'Run: gem install git-pairing'
@@ -245,13 +259,19 @@ main(){
 
   prompt_for_user
   local user_prompt_okay="$?"
+
   if [ "$user_prompt_okay" != "0" ]; then
     echo 'Adding authors, exiting'
     exit 1
   fi
 
   local version="$(get_project_version)"
-  local new_version="$(bump_version "$version" "$bump")"
+  local new_version='1.0.0'
+
+  if [ "$bump" != 'init' ]; then
+    new_version="$(bump_version "$version" "$bump")"
+  fi
+
   echo "Changing version $version -> $new_version"
   do_git_stuff "$new_version" "$message"
 }
