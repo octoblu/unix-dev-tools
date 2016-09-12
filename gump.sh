@@ -5,7 +5,7 @@ assert_hub(){
   || die 'hub not found, `brew install hub`'
 
   echo "" | hub issue &> /dev/null \
-  || die 'hub not logged in, fill in the prompts at `hub issue`'
+  || die 'hub not logged in, run `hub issue` and fill in the prompts'
 }
 
 bump_version(){
