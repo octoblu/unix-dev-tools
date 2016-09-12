@@ -80,7 +80,7 @@ do_git_stuff(){
   echo "  5. git push --tags"
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
-  echo "  8. Run: hub release create --message \"$full_message\" \"$full_version\""
+  echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -93,7 +93,7 @@ do_git_stuff(){
     &&  git tag "$full_version" \
     &&  git push \
     &&  git push --tags \
-    &&  hub release create --message "$full_message" "$full_version"
+    &&  hub release create -m "$full_message" "$full_version"
   fi
 }
 
