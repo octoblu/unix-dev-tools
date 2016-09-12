@@ -1,5 +1,13 @@
 #!/bin/bash
 
+assert_hub(){
+  hub --version &> /dev/null \
+  || die 'hub not found, `brew install hub`'
+
+  echo "" | hub issue &> /dev/null \
+  || die 'hub not logged in, fill in the prompts at `hub issue`'
+}
+
 bump_version(){
   local version="$1"
   local bump="$2"
@@ -49,6 +57,12 @@ check_git(){
   fi
 }
 
+die(){
+  local message="$1"
+  echo "$message"
+  exit 1
+}
+
 do_git_stuff(){
   local new_version="$1"
   local message="$2"
@@ -64,18 +78,22 @@ do_git_stuff(){
   echo "  3. git tag $full_version"
   echo "  4. git push"
   echo "  5. git push --tags"
+  echo '  6. Run: git push'
+  echo '  7. Run: git push --tags'
+  echo "  8. Run: hub release create --message \"$full_message\" \"$full_version\""
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
   read -s -p "press 'y' to run the above commands, any other key to exit"$'\n' -n 1 DO_GIT
   if [[ "$DO_GIT" == "y" ]]; then
     modify_file "$new_version"
-    echo "Releasing ${full_version}..."
-    git add .
-    git commit --message "$full_message"
-    git tag "$full_version"
-    git push
-    git push --tags
+    echo "Releasing ${full_version}..." \
+    &&  git add . \
+    &&  git commit --message "$full_message" \
+    &&  git tag "$full_version" \
+    &&  git push \
+    &&  git push --tags \
+    &&  hub release create --message "$full_message" "$full_version"
   fi
 }
 
@@ -182,6 +200,7 @@ usage(){
   echo '  5. Run: git tag <new-version>'
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
+  echo '  8. Run: hub release create -m "<message>" <new-version>'
 }
 
 script_directory(){
@@ -256,6 +275,8 @@ main(){
     echo 'Run: gem install git-pairing'
     exit 1
   fi
+
+  assert_hub
 
   prompt_for_user
   local user_prompt_okay="$?"
