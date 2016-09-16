@@ -93,6 +93,7 @@ do_git_stuff(){
     &&  git tag "$full_version" \
     &&  git push \
     &&  git push --tags \
+    &&  sleep 10 \
     &&  hub release create -m "$full_message" "$full_version"
   fi
 }
