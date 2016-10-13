@@ -8,6 +8,11 @@ assert_hub(){
   || die 'hub not logged in, run `hub issue` and fill in the prompts'
 }
 
+assert_curl(){
+  curl --version &> /dev/null \
+  || die 'curl not found, `brew install curl`'
+}
+
 bump_version(){
   local version="$1"
   local bump="$2"
@@ -63,6 +68,21 @@ die(){
   exit 1
 }
 
+do_deploy(){
+  local new_version="$1"
+  local tag="v$new_version"
+  local slug="$(git remote show origin -n | grep h.URL | sed 's/.*://;s/.git$//')"
+  echo ''
+  echo "Creating Deployment: $slug/$tag"
+  curl --silent --fail -X POST "https://beekeeper.octoblu.com/deployments/$slug/$tag"
+  local status=$?
+  if [ $status -ne 0 ]; then
+    echo ''
+    echo "Deploy Failed!!!!!!!!"
+    echo ''
+  fi
+}
+
 do_git_stuff(){
   local new_version="$1"
   local message="$2"
@@ -81,6 +101,7 @@ do_git_stuff(){
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
   echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
+  echo "  9. Post: beekeeper.octoblu.com/deployments"
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -93,7 +114,7 @@ do_git_stuff(){
     &&  git tag "$full_version" \
     &&  git push \
     &&  git push --tags \
-    &&  sleep 10 \
+    &&  sleep 5 \
     &&  hub release create -m "$full_message" "$full_version"
   fi
 }
@@ -202,6 +223,7 @@ usage(){
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
   echo '  8. Run: hub release create -m "<message>" <new-version>'
+  echo '  9. Post: beekeeper.octoblu.com/deployments'
 }
 
 script_directory(){
@@ -278,6 +300,7 @@ main(){
   fi
 
   assert_hub
+  assert_curl
 
   prompt_for_user
   local user_prompt_okay="$?"
@@ -295,7 +318,8 @@ main(){
   fi
 
   echo "Changing version $version -> $new_version"
-  do_git_stuff "$new_version" "$message"
+  do_git_stuff "$new_version" "$message" && \
+  do_deploy "$new_version"
 }
 
 main "$@"
