@@ -102,8 +102,8 @@ do_git_stuff(){
   echo "  5. git push --tags"
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
-  echo "  8. Run: curl --silent --fail -X POST \"https://beekeeper.octoblu.com/deployments/$slug/$tag\""
-  echo "  9. Run: hub release create -m \"$full_message\" \"$full_version\""
+  echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
+  echo "  9. Run: curl --silent --fail -X POST \"https://beekeeper.octoblu.com/deployments/$slug/$tag\""
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
