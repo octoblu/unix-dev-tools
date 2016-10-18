@@ -86,6 +86,8 @@ do_deploy(){
 do_git_stuff(){
   local new_version="$1"
   local message="$2"
+  local tag="v$new_version"
+  local slug="$(git remote show origin -n | grep h.URL | sed 's/.*://;s/.git$//')"
   local full_version="v${new_version}"
   local full_message="${full_version}"
   if [ ! -z "$message" ]; then
@@ -100,8 +102,8 @@ do_git_stuff(){
   echo "  5. git push --tags"
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
-  echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
-  echo "  9. Post: beekeeper.octoblu.com/deployments"
+  echo "  8. Run: curl --silent --fail -X POST \"https://beekeeper.octoblu.com/deployments/$slug/$tag\""
+  echo "  9. Run: hub release create -m \"$full_message\" \"$full_version\""
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
