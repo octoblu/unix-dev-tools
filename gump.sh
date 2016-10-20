@@ -13,6 +13,12 @@ assert_curl(){
   || die 'curl not found, `brew install curl`'
 }
 
+assert_required_env() {
+  if [ -z "$BEEKEEPER_URI" ]; then
+    die '$BEEKEEPER_URI environment not found and is required. Make sure dotfiles are up to date.'
+  fi
+}
+
 bump_version(){
   local version="$1"
   local bump="$2"
@@ -70,11 +76,12 @@ die(){
 
 do_deploy(){
   local new_version="$1"
+  local beekeeper_uri="$BEEKEEPER_URI"
   local tag="v$new_version"
   local slug="$(git remote show origin -n | grep h.URL | sed 's/.*://;s/.git$//')"
   echo ''
   echo "Creating Deployment: $slug/$tag"
-  curl --silent --fail -X POST "https://beekeeper.octoblu.com/deployments/$slug/$tag"
+  curl --silent --fail -X POST "$beekeeper_uri/deployments/$slug/$tag"
   local status=$?
   if [ $status -ne 0 ]; then
     echo ''
@@ -103,7 +110,7 @@ do_git_stuff(){
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
   echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
-  echo "  9. Run: curl --silent --fail -X POST \"https://beekeeper.octoblu.com/deployments/$slug/$tag\""
+  echo "  9. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -225,7 +232,7 @@ usage(){
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
   echo '  8. Run: hub release create -m "<message>" <new-version>'
-  echo '  9. Post: beekeeper.octoblu.com/deployments'
+  echo '  9. Post: $BEEKEEPER_URI/deployments'
 }
 
 script_directory(){
@@ -303,6 +310,7 @@ main(){
 
   assert_hub
   assert_curl
+  assert_required_env
 
   prompt_for_user
   local user_prompt_okay="$?"
