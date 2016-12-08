@@ -124,8 +124,17 @@ do_git_stuff(){
     &&  git push \
     &&  git push --tags \
     &&  sleep 5 \
-    &&  hub release create -m "$full_message" "$full_version"
+    &&  create_release "$full_message" "$full_version"
   fi
+}
+
+create_release() {
+  local full_message="$1"
+  local full_version="$2"
+  if [ -n "$SKIP_CREATE_RELEASE" -a "$SKIP_CREATE_RELEASE" != "false" ]; then
+    return 0
+  fi
+  hub release create -m "$full_message" "$full_version"
 }
 
 get_project_version(){
@@ -222,6 +231,8 @@ usage(){
   echo '  -i, --init      set the version to 1.0.0'
   echo '  -h, --help      print this help text'
   echo '  -v, --version   print the version'
+  echo 'environment:'
+  echo '  SKIP_CREATE_RELEASE (bool)'
   echo ''
   echo 'But what does it do? It will:'
   echo '  1. Check if your project is out of sync'
