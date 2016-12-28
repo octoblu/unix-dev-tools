@@ -19,6 +19,28 @@ assert_required_env() {
   fi
 }
 
+parse_yaml() {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("local %s%s%s=%s\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
+parse_gump_config() {
+  if [ -f ./.gump.yml ]; then
+    parse_yaml ./.gump.yml "gump_config_"
+  fi
+}
+
 bump_version(){
   local version="$1"
   local bump="$2"
@@ -101,16 +123,22 @@ do_git_stuff(){
     full_message="${full_message} ${message}"
   fi
 
+  `parse_gump_config`
   echo "Warning! About to run the following commands:"
-  echo "  1. git add ."
-  echo "  2. git commit --message \"$full_message\""
-  echo "  3. git tag $full_version"
-  echo "  4. git push"
-  echo "  5. git push --tags"
-  echo '  6. Run: git push'
-  echo '  7. Run: git push --tags'
-  echo "  8. Run: hub release create -m \"$full_message\" \"$full_version\""
-  echo "  9. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""
+  local item_count=1
+  echo "  ${item_count}. git add ."; ((item_count++))
+  echo "  ${item_count}. git commit --message \"$full_message\""; ((item_count++))
+  echo "  ${item_count}. git tag $full_version"; ((item_count++))
+  echo "  ${item_count}. git push"; ((item_count++))
+  echo "  ${item_count}. git push --tags"; ((item_count++))
+  echo "  ${item_count}. Run: git push"; ((item_count++))
+  echo "  ${item_count}. Run: git push --tags"; ((item_count++))
+  if [ "$gump_config_release_draft" == 'true' ]; then
+    echo "  ${item_count}. Run: hub release create -d -m \"$full_message\" \"$full_version\""; ((item_count++))
+  else
+    echo "  ${item_count}. Run: hub release create -m \"$full_message\" \"$full_version\""; ((item_count++))
+  fi
+  echo "  ${item_count}. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""; ((item_count++))
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
@@ -125,16 +153,20 @@ do_git_stuff(){
     &&  git push --tags \
     &&  sleep 5 \
     &&  create_release "$full_message" "$full_version"
+  else
+    return 1
   fi
 }
 
 create_release() {
   local full_message="$1"
   local full_version="$2"
-  if [ -n "$SKIP_CREATE_RELEASE" -a "$SKIP_CREATE_RELEASE" != "false" ]; then
-    return 0
+  `parse_gump_config`
+  if [ "$gump_config_release_draft" == 'true' ]; then
+    hub release create -d -m "$full_message" "$full_version"
+  else
+    hub release create -m "$full_message" "$full_version"
   fi
-  hub release create -m "$full_message" "$full_version"
 }
 
 get_project_version(){
@@ -156,36 +188,6 @@ get_project_version(){
   local latest_tag="$(git tag --list | grep '^v[0-9]\+\.[0-9]\+\.[0-9]\+' | gsort -V | tail -n 1)"
   local version="${latest_tag/v/}"
   echo "$version"
-}
-
-get_bump(){
-  local cmd="$1"
-  local bump=''
-  if [ "$cmd" == '--major' ]; then
-    bump='major'
-  fi
-
-  if [ "$cmd" == '--minor' ]; then
-    bump='minor'
-  fi
-
-  if [ "$cmd" == '-p' ]; then
-    bump='patch'
-  fi
-
-  if [ "$cmd" == '--patch' ]; then
-    bump='patch'
-  fi
-
-  if [ "$cmd" == '-i' ]; then
-    bump='init'
-  fi
-
-  if [ "$cmd" == '--init' ]; then
-    bump='init'
-  fi
-
-  echo "$bump"
 }
 
 modify_file(){
@@ -210,8 +212,18 @@ modify_file(){
 }
 
 prompt_for_user() {
+  local last_authors="$1"
   local users=""
-  read -p 'Add author(s): ' users
+  if [ "$last_authors" == 'true' ]; then
+    if [ -f ~/.gump_last_authors ]; then
+      users="$(cat ~/.gump_last_authors)"
+      echo "Using last author(s): $users"
+    fi
+  fi
+  if [ -z "$users" ]; then
+    read -p 'Add author(s): ' users
+  fi
+  echo "$users" > ~/.gump_last_authors
   local users_count="$(echo "$users" | wc -w | xargs)"
   if [ "$users_count" == '1' ]; then
     git solo $users
@@ -225,14 +237,19 @@ usage(){
   echo ''
   echo 'example: gump "added some awesome feature" --minor'
   echo ''
-  echo '  --major         major version bump. 1.0.0 -> 2.0.0'
-  echo '  --minor         minor version bump. 1.0.0 -> 1.1.0'
-  echo '  -p, --patch     patch version bump. 1.0.0 -> 1.0.1 (default)'
-  echo '  -i, --init      set the version to 1.0.0'
-  echo '  -h, --help      print this help text'
-  echo '  -v, --version   print the version'
-  echo 'environment:'
-  echo '  SKIP_CREATE_RELEASE (bool)'
+  echo '  --major            major version bump. 1.0.0 -> 2.0.0'
+  echo '  --minor            minor version bump. 1.0.0 -> 1.1.0'
+  echo '  -p, --patch        patch version bump. 1.0.0 -> 1.0.1 (default)'
+  echo '  -i, --init         set the version to 1.0.0'
+  echo '  -l, --last-authors use the last author(s)'
+  echo '  -h, --help         print this help text'
+  echo '  -v, --version      print the version'
+  echo ''
+  echo 'config_file:'
+  echo '  ** place config file (gump.yml) in the project directory **'
+  echo '  possible values:'
+  echo '    release:'
+  echo '      draft: (bool) - Creates draft release in github. Defaults to false.'
   echo ''
   echo 'But what does it do? It will:'
   echo '  1. Check if your project is out of sync'
@@ -270,31 +287,52 @@ version(){
 }
 
 main(){
-  local cmd="$1"
-  local cmd2="$2"
-
-  if [ "$cmd" == '--help' -o "$cmd" == '-h' ]; then
-    usage
-    exit 0
-  fi
-
-  if [ "$cmd" == '--version' -o "$cmd" == '-v' ]; then
-    version
-    exit 0
-  fi
-
-  local bump="$(get_bump "$cmd")"
-  local message=""
-  if [ -z "$bump" ]; then
-    bump="$(get_bump "$cmd2")"
-    message="$cmd"
-  else
-    message="$cmd2"
-  fi
-
-  if [ -z "$bump" ]; then
-    bump='patch'
-  fi
+  local bump='patch'
+  local last_authors='false'
+  local message
+  while [ "$1" != "" ]; do
+    local param="$1"
+    local value="$2"
+    case "$param" in
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      -v | --version)
+        version
+        exit 0
+        ;;
+      --major)
+        bump="major"
+        ;;
+      --minor)
+        bump="minor"
+        ;;
+      -p | --patch)
+        bump="patch"
+        ;;
+      -i | --init)
+        bump="init"
+        ;;
+      -l | --last-authors)
+        last_authors='true'
+        if [ "$value" == 'true' ]; then
+          shift
+        fi
+        ;;
+      *)
+        if [ "${param::1}" == '-' ]; then
+          echo "ERROR: unknown parameter \"$param\""
+          usage
+          exit 1
+        fi
+        if [ -z "$message" ]; then
+          message="$param"
+        fi
+        ;;
+    esac
+    shift
+  done
 
   check_master
   local master_okay="$?"
@@ -323,7 +361,7 @@ main(){
   assert_curl
   assert_required_env
 
-  prompt_for_user
+  prompt_for_user "$last_authors"
   local user_prompt_okay="$?"
 
   if [ "$user_prompt_okay" != "0" ]; then
@@ -339,8 +377,7 @@ main(){
   fi
 
   echo "Changing version $version -> $new_version"
-  do_git_stuff "$new_version" "$message" && \
-  do_deploy "$new_version"
+  do_git_stuff "$new_version" "$message" && do_deploy "$new_version"
 }
 
 main "$@"
