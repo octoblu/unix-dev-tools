@@ -152,10 +152,31 @@ do_git_stuff(){
     &&  git push \
     &&  git push --tags \
     &&  sleep 5 \
-    &&  create_release "$full_message" "$full_version"
+    &&  try_and_create_release "$full_message" "$full_version"
   else
     return 1
   fi
+}
+
+try_and_create_release() {
+  local full_message="$1"
+  local full_version="$2"
+  local n=0
+  local max=10
+  local exit_code=1
+  echo '* waiting 5 seconds to create hub release...'
+  sleep 5
+  until [ $n -ge $max ]; do
+    create_release "$full_message" "$full_version"
+    if [ "$?" == "0" ]; then
+      exit_code=0
+      break;
+    fi
+    echo "* trying again in 5 seconds..."
+    sleep 5
+    n=$[$n+1]
+  done
+  return $exit_code
 }
 
 create_release() {
