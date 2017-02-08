@@ -115,6 +115,7 @@ do_deploy(){
 do_git_stuff(){
   local new_version="$1"
   local message="$2"
+  local say_yes="$3"
   local tag="v$new_version"
   local slug="$(git remote show origin -n | grep h.URL | sed 's/.*://;s/.git$//')"
   local full_version="v${new_version}"
@@ -133,16 +134,20 @@ do_git_stuff(){
   echo "  ${item_count}. git push --tags"; ((item_count++))
   echo "  ${item_count}. Run: git push"; ((item_count++))
   echo "  ${item_count}. Run: git push --tags"; ((item_count++))
+  echo "  ${item_count}. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""; ((item_count++))
   if [ "$gump_config_release_draft" == 'true' ]; then
     echo "  ${item_count}. Run: hub release create -d -m \"$full_message\" \"$full_version\""; ((item_count++))
   else
     echo "  ${item_count}. Run: hub release create -m \"$full_message\" \"$full_version\""; ((item_count++))
   fi
-  echo "  ${item_count}. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""; ((item_count++))
   echo ""
   echo "AND we will be changing your package.json, version.go, and VERSION"
   echo ""
-  read -s -p "press 'y' to run the above commands, any other key to exit"$'\n' -n 1 DO_GIT
+  if [ "$say_yes" == 'true' ]; then
+    DO_GIT='y'
+  else
+    read -s -p "press 'y' to run the above commands, any other key to exit"$'\n' -n 1 DO_GIT
+  fi
   if [[ "$DO_GIT" == "y" ]]; then
     modify_file "$new_version"
     echo "Releasing ${full_version}..." \
@@ -150,30 +155,36 @@ do_git_stuff(){
     &&  git commit --message "$full_message" \
     &&  git tag "$full_version" \
     &&  git push \
-    &&  git push --tags \
-    &&  sleep 5 \
-    &&  try_and_create_release "$full_message" "$full_version"
+    &&  git push --tags
   else
     return 1
   fi
+}
+
+do_release() {
+  local message="$1"
+  local version="$2"
+  try_and_create_release "$message" "$version"
 }
 
 try_and_create_release() {
   local full_message="$1"
   local full_version="$2"
   local n=0
-  local max=10
+  local max=20
   local exit_code=1
-  echo '* waiting 5 seconds to create hub release...'
-  sleep 5
+  local wait_seconds=5
+  echo "* waiting $wait_seconds seconds to create hub release..."
+  sleep $wait_seconds
   until [ $n -ge $max ]; do
     create_release "$full_message" "$full_version"
     if [ "$?" == "0" ]; then
       exit_code=0
       break;
     fi
-    echo "* trying again in 5 seconds..."
-    sleep 5
+    wait_seconds=$[$wait_seconds+2]
+    echo "* trying again in $wait_seconds seconds..."
+    sleep $wait_seconds
     n=$[$n+1]
   done
   return $exit_code
@@ -263,6 +274,7 @@ usage(){
   echo '  -p, --patch        patch version bump. 1.0.0 -> 1.0.1 (default)'
   echo '  -i, --init         set the version to 1.0.0'
   echo '  -l, --last-authors use the last author(s)'
+  echo '  -y, --yes          just gump it'
   echo '  -h, --help         print this help text'
   echo '  -v, --version      print the version'
   echo ''
@@ -280,8 +292,8 @@ usage(){
   echo '  5. Run: git tag <new-version>'
   echo '  6. Run: git push'
   echo '  7. Run: git push --tags'
-  echo '  8. Run: hub release create -m "<message>" <new-version>'
-  echo '  9. Post: $BEEKEEPER_URI/deployments'
+  echo '  8. Post: $BEEKEEPER_URI/deployments'
+  echo '  9. Run: hub release create -m "<message>" <new-version>'
 }
 
 script_directory(){
@@ -311,6 +323,7 @@ main(){
   local bump='patch'
   local last_authors='false'
   local message
+  local say_yes='false'
   while [ "$1" != "" ]; do
     local param="$1"
     local value="$2"
@@ -338,6 +351,12 @@ main(){
       -l | --last-authors)
         last_authors='true'
         if [ "$value" == 'true' ]; then
+          shift
+        fi
+        ;;
+      -y | --yes)
+        say_yes='true'
+        if [ "$say_yes" == 'true' ]; then
           shift
         fi
         ;;
@@ -398,7 +417,9 @@ main(){
   fi
 
   echo "Changing version $version -> $new_version"
-  do_git_stuff "$new_version" "$message" && do_deploy "$new_version"
+  do_git_stuff "$new_version" "$message" "$say_yes" \
+  && do_deploy "$new_version" \
+  && do_release "$message" "$new_version"
 }
 
 main "$@"
