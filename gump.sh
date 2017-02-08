@@ -112,17 +112,30 @@ do_deploy(){
   fi
 }
 
+get_full_version() {
+  local version="$1"
+  echo "v${version}"
+}
+
+get_full_message() {
+  local version="$1"
+  local message="$2"
+  local full_version="$(get_full_version "$version")"
+  local full_message="${full_version}"
+  if [ ! -z "$message" ]; then
+    full_message="${full_message} ${message}"
+  fi
+  echo "$full_message"
+}
+
 do_git_stuff(){
   local new_version="$1"
   local message="$2"
   local say_yes="$3"
   local tag="v$new_version"
   local slug="$(git remote show origin -n | grep h.URL | sed 's/.*://;s/.git$//')"
-  local full_version="v${new_version}"
-  local full_message="${full_version}"
-  if [ ! -z "$message" ]; then
-    full_message="${full_message} ${message}"
-  fi
+  local full_version="$(get_full_version "$new_version")"
+  local full_message="$(get_full_message "$new_version" "$message")"
 
   `parse_gump_config`
   echo "Warning! About to run the following commands:"
@@ -164,7 +177,9 @@ do_git_stuff(){
 do_release() {
   local message="$1"
   local version="$2"
-  try_and_create_release "$message" "$version"
+  local full_version="$(get_full_version "$new_version")"
+  local full_message="$(get_full_message "$new_version" "$message")"
+  try_and_create_release "$full_message" "$full_version"
 }
 
 try_and_create_release() {
