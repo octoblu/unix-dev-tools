@@ -356,7 +356,7 @@ main(){
         ;;
       -y | --yes)
         say_yes='true'
-        if [ "$say_yes" == 'true' ]; then
+        if [ "$value" == 'true' ]; then
           shift
         fi
         ;;
