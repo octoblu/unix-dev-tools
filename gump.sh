@@ -217,17 +217,19 @@ create_release() {
 }
 
 get_project_version(){
-  if [ -f "./package.json" ]; then
+  local gitroot="$(git rev-parse --show-cdup)"
+
+  if [ -f "./${gitroot}/package.json" ]; then
     jq '.version' --raw-output ./package.json
     return
   fi
 
-  if [ -f "./version.go" ]; then
+  if [ -f "./${gitroot}/version.go" ]; then
     grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./version.go
     return
   fi
 
-  if [ -f "./VERSION" ]; then
+  if [ -f "./${gitroot}/VERSION" ]; then
     grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./VERSION
     return
   fi
@@ -239,22 +241,24 @@ get_project_version(){
 
 modify_file(){
   local version="$1"
-  if [ -f "./package.json" ]; then
+  local gitroot="$(git rev-parse --show-cdup)"
+
+  if [ -f "./${gitroot}/package.json" ]; then
     echo 'Modifying package.json'
-    local packageJSON="$(cat ./package.json)"
-    echo "$packageJSON" | jq --raw-output ".version=\"$version\"" > ./package.json
+    local packageJSON="$(cat "./${gitroot}/package.json")"
+    echo "$packageJSON" | jq --raw-output ".version=\"$version\"" > "./${gitroot}/package.json"
   fi
 
-  if [ -f "./version.go" ]; then
+  if [ -f "./${gitroot}/version.go" ]; then
     echo 'Modifying version.go'
-    local versionGo="$(cat ./version.go)"
-    echo "$versionGo" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./version.go
+    local versionGo="$(cat "./${gitroot}/version.go")"
+    echo "$versionGo" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > "./${gitroot}/version.go"
   fi
 
-  if [ -f "./VERSION" ]; then
+  if [ -f "./${gitroot}/VERSION" ]; then
     echo 'Modifying VERSION'
-    local versionBash="$(cat VERSION)"
-    echo "$versionBash" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > ./VERSION
+    local versionBash="$(cat "./${gitroot}/VERSION")"
+    echo "$versionBash" | sed -e "s/[0-9]*\.[0-9]*\.[0-9]*/$version/" > "./${gitroot}/VERSION"
   fi
 }
 
