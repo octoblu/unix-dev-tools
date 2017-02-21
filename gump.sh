@@ -140,7 +140,7 @@ do_git_stuff(){
   `parse_gump_config`
   echo "Warning! About to run the following commands:"
   local item_count=1
-  echo "  ${item_count}. git add ."; ((item_count++))
+  echo "  ${item_count}. git add --all"; ((item_count++))
   echo "  ${item_count}. git commit --message \"$full_message\""; ((item_count++))
   echo "  ${item_count}. git tag $full_version"; ((item_count++))
   echo "  ${item_count}. git push"; ((item_count++))
@@ -164,7 +164,7 @@ do_git_stuff(){
   if [[ "$DO_GIT" == "y" ]]; then
     modify_file "$new_version"
     echo "Releasing ${full_version}..." \
-    &&  git add . \
+    &&  git add --all \
     &&  git commit --message "$full_message" \
     &&  git tag "$full_version" \
     &&  git push \
@@ -220,17 +220,17 @@ get_project_version(){
   local gitroot="$(git rev-parse --show-cdup)"
 
   if [ -f "./${gitroot}/package.json" ]; then
-    jq '.version' --raw-output ./package.json
+    jq '.version' --raw-output "./${gitroot}/package.json"
     return
   fi
 
   if [ -f "./${gitroot}/version.go" ]; then
-    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./version.go
+    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' "./${gitroot}/version.go"
     return
   fi
 
   if [ -f "./${gitroot}/VERSION" ]; then
-    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' ./VERSION
+    grep --only-matching '[0-9]*\.[0-9]*\.[0-9]' "./${gitroot}/VERSION"
     return
   fi
 
@@ -306,7 +306,7 @@ usage(){
   echo 'But what does it do? It will:'
   echo '  1. Check if your project is out of sync'
   echo '  2. Modify the package.json, version.go, VERSION, or do nothing'
-  echo '  3. Run: git add .'
+  echo '  3. Run: git add --all'
   echo '  4. Run: git commit -m "<new-version> <message>"'
   echo '  5. Run: git tag <new-version>'
   echo '  6. Run: git push'
