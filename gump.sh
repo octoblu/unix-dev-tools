@@ -150,6 +150,8 @@ do_git_stuff(){
   echo "  ${item_count}. Run: curl --silent --fail -X POST \"$BEEKEEPER_URI/deployments/$slug/$tag\""; ((item_count++))
   if [ "$gump_config_release_draft" == 'true' ]; then
     echo "  ${item_count}. Run: hub release create -d -m \"$full_message\" \"$full_version\""; ((item_count++))
+  elif [ "$gump_config_release_prerelease" == 'true' ]; then
+    echo "  ${item_count}. Run: hub release create -p -m \"$full_message\" \"$full_version\""; ((item_count++))
   else
     echo "  ${item_count}. Run: hub release create -m \"$full_message\" \"$full_version\""; ((item_count++))
   fi
@@ -211,6 +213,8 @@ create_release() {
   `parse_gump_config`
   if [ "$gump_config_release_draft" == 'true' ]; then
     hub release create -d -m "$full_message" "$full_version"
+  elif [ "$gump_config_release_prerelease" == 'true' ]; then
+    hub release create -p -m "$full_message" "$full_version"
   else
     hub release create -m "$full_message" "$full_version"
   fi
@@ -302,6 +306,7 @@ usage(){
   echo '  possible values:'
   echo '    release:'
   echo '      draft: (bool) - Creates draft release in github. Defaults to false.'
+  echo '      prerelease: (bool) - Creates prerelease release in github. Defaults to false.'
   echo ''
   echo 'But what does it do? It will:'
   echo '  1. Check if your project is out of sync'
