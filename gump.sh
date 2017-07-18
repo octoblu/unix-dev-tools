@@ -47,8 +47,8 @@ bump_version(){
   if [ -f .version ]; then
     rm .version
   fi
-  semver init "$version" > /dev/null
-  local new_version="$(semver bump "$2")"
+  /usr/local/bin/semver init "$version" > /dev/null
+  local new_version="$(/usr/local/bin/semver bump "$2")"
   rm .version
   echo "$new_version"
 }
