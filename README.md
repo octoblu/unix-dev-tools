@@ -1,10 +1,21 @@
-# unix-dev-tools
+# Gump
 
-Tools for managing Octoblu unix-dev-tools
+# Table of Contents
+
+* [Introduction](#introduction)
+* [Getting Started](#getting-started)
+  * [Install](#install)
+  * [Environment](#environment)
+  * [Usage](#usage)
+* [License](#license)
+
+# Introduction
+
+Gump is command-line utility for committing, tagging, and deploying services.
+
+# Getting Started
 
 ## Install
-
-The easiest way to obtain these tools is through homebrew
 
 ```shell
 # make the octoblu tools able install via 'brew install'
@@ -14,18 +25,36 @@ brew tap octoblu/tools
 brew install gump
 ```
 
-## Contributing
+## Environment
 
-If you update any of the tools in here, you'll need to:
+- `BEEKEEPER_URI` - must include basic auth in the url
 
-1. Tag it `git tag v1.0.0`
-2. Draft a new release in [unix-dev-tools releases](https://github.com/octoblu/unix-dev-tools/releases)
-3. Update the appropriate formula in  [octoblu/homebrew-tools](https://github.com/octoblu/homebrew-tools)
-4. Test out the formula:
+## Usage
 
-```shell
-brew update
-brew install octoblu/tools/<formula>    # prefix 'octoblu/tools/' is only nescessary
-                                        # in case there's an identically named
-                                        # package in the base homebrew tap
+```bash
+gump --help
 ```
+
+# License
+
+The MIT License (MIT)
+
+Copyright (c) 2016 Octoblu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
