@@ -12,9 +12,6 @@ brew tap octoblu/tools
 
 # Then install the tools
 brew install gump
-
-# Or if you just want a subset of them
-brew install gump
 ```
 
 ## Contributing
